@@ -91,10 +91,8 @@ the format below:" followed by the output format you chose.
 **What output format should you request from the LLM?**
 
 ```
-[blank — you need to parse the response in classify_episode(). What format
-makes parsing reliable? Think about: a single label on its own line?
-A structured format like "Label: X / Reasoning: Y"? JSON?
-What are the tradeoffs?]
+Label: X
+Reasoning: Y
 ```
 
 ---
@@ -102,8 +100,10 @@ What are the tradeoffs?]
 **Edge cases to handle in the prompt:**
 
 ```
-[blank — what if labeled_examples is empty? What if the description is very
-short? How does your prompt handle these?]
+Edge cases will be handled upstream in classify_episode() before this function is called.
+If the labeled_examples is empty or description is empty, classify_episode() returns early
+with "unknown" and never calls build_few_shot_prompt(). For short description, the LLM
+will just have to work with less signal. No changes will be made to the prompt.
 ```
 
 ---
@@ -159,9 +159,9 @@ Extract the response text from:
 **Step 3 — Parse the response:**
 
 ```
-[blank — how do you extract the label and reasoning from the LLM's text output?
-What string operations or parsing logic do you need?
-This depends on the output format you chose in build_few_shot_prompt.]
+response_text = response.choices[0].message.conent
+label = response_text.split("Label:")[-1].split("\n")[0].strip().lower()
+reasoning = response_text.split("reasoning:")[-1].strip()
 ```
 
 ---
@@ -169,8 +169,8 @@ This depends on the output format you chose in build_few_shot_prompt.]
 **Step 4 — Validate the label:**
 
 ```
-[blank — what do you do if the LLM returns a label that isn't in VALID_LABELS?
-What should label be set to?]
+if label not in VALID_LABELS:
+  label = "unknown"
 ```
 
 ---
@@ -178,9 +178,8 @@ What should label be set to?]
 **Step 5 — Handle errors gracefully:**
 
 ```
-[blank — what could go wrong? (Network error? Unparseable response?)
-What should the function return if something fails?
-Hint: the evaluation loop runs 20 calls — one bad response shouldn't crash everything.]
+except Exception as e:
+  return {"label": "unknown", "reasoning": f"Error: {e}"}
 ```
 
 ---
@@ -213,24 +212,33 @@ any labels you're unsure about. Annotation quality is part of the lab.
 **Test: what does the raw LLM response look like for one episode?**
 
 ```
-Episode tested: [title]
-Raw response text: [paste it here]
+Episode tested: solo
+Raw response text: The episode features a single host speaking from their opinion and experience, with no guests or external sources, discussing their thoughts on the four-day workweek.
 ```
 
 **How did you parse the label out of the response?**
 
 ```
 [describe the string operations — strip, split, lower, etc.]
+The response string is split using the word "Label:", and what comes last in the split array should be the response.
+Then I took the last element in the split array and applied another split on the new line and choose the first element 
+since the new line split would leave "<label>" and "Reasoning: <brief reasoning>".
+Then I applied .lower() and .strip() to ensure the label is in lowercase and has no leading/trailing spaces.
 ```
 
 **Did any episodes return `"unknown"`? If so, why?**
 
 ```
-[yes / no — if yes, what did the raw response look like?]
+no, all the episodes returned their corresponding label:  
+
+The Case for Four-Day Workweeks: solo  
+Dr. Priya Nair on Adolescent Mental Health After the Pandemic: interview  
+The Aral Sea: A Disaster in Four Acts: narrative  
+Five Writers on What It Means to Write for the Internet Now: panel  
 ```
 
 **One thing about the output format that surprised you:**
 
 ```
-[your answer here]
+N/A, the LLM was very precise in returning correct output format
 ```

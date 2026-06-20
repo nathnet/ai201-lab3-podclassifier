@@ -44,8 +44,9 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Formula:**
 
 ```
-[blank — write out the accuracy formula in plain English.
- What counts as "correct"? What do you divide by?]
+
+Accuracy = number of correct predictions / total number of predictions
+where correct predictions are the predictions that match the corresponding ground truth.
 ```
 
 ---
@@ -53,10 +54,10 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Step-by-step logic:**
 
 ```
-[blank — describe the steps your code will take.
- 1. ...
- 2. ...
- 3. ...]
+1. Check if total number of predictions is above 0
+2. Count how many predictions[i] == ground_truth[i]
+3. Divide the correct predictions / total number of predictions
+4. Return the result.
 ```
 
 ---
@@ -64,7 +65,8 @@ Returns the fraction of predictions that exactly match the ground truth.
 **Edge case — what if both lists are empty?**
 
 ```
-[blank — what should the function return? Why?]
+Return 0.0 to prevent crash from division by zero.
+0 is returned because having no predictions means there's nothing to report.
 ```
 
 ---
@@ -75,7 +77,13 @@ Returns the fraction of predictions that exactly match the ground truth.
 predictions  = ["interview", "solo", "panel", "interview"]
 ground_truth = ["interview", "solo", "solo",  "narrative"]
 
-[blank — what does compute_accuracy() return for these inputs? Show your work.]
+i = 1: interview == interview
+i = 2: solo == solo
+i = 3: panel != solo
+i = 4: interview != narrative
+
+The correct prediction count is 2, while the total is 4.
+Accuracy would be 2/4 or 0.5.
 ```
 
 ---
@@ -115,6 +123,8 @@ A `dict` keyed by label. Each value is a dict with three keys:
 ```
 [blank — be precise. When does an episode count as correctly classified
  for the "interview" class, for example?]
+An episode count as correctly classified for each label when ground_truth[i] == label AND 
+predictions[i] == label.
 ```
 
 ---
@@ -122,7 +132,7 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **What does "total" mean for a given class?**
 
 ```
-[blank — is "total" the total number of predictions, or something more specific?]
+The total number of predictions per class is defined by the number of ground_truth for that label.
 ```
 
 ---
@@ -130,12 +140,12 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **Step-by-step logic:**
 
 ```
-[blank — describe the steps your code will take.
- 1. Initialize ...
- 2. Loop over ...
- 3. For each pair (predicted, truth) ...
- 4. After the loop ...
- 5. Return ...]
+1. Initialize a dict for each label in VALID_LABELS with correct=0, total=0
+2. Loop over zip(predictions, ground_truth)
+3. For each pair (predicted, truth): increment total for the truth label; 
+   if predicted == truth, also increment correct for that label.
+4. After the loop, compute accuracy = correct / total for each label.
+5. Return the dict
 ```
 
 ---
@@ -143,8 +153,7 @@ A `dict` keyed by label. Each value is a dict with three keys:
 **Edge case — what if a class has no examples in ground_truth (total == 0)?**
 
 ```
-[blank — what should accuracy be set to? Why?
- Hint: look at the docstring in evaluate.py.]
+Set accuracy for that label to 0.0.
 ```
 
 ---
@@ -155,14 +164,26 @@ A `dict` keyed by label. Each value is a dict with three keys:
 predictions  = ["interview", "interview", "solo", "panel", "panel"]
 ground_truth = ["interview", "solo",      "solo", "panel", "narrative"]
 
-[blank — fill in the per-class results table below]
-
 label       correct  total  accuracy
 ----------  -------  -----  --------
-interview   [blank]  [blank]  [blank]
-solo        [blank]  [blank]  [blank]
-panel       [blank]  [blank]  [blank]
-narrative   [blank]  [blank]  [blank]
+interview      1       1      1.0
+solo           1       2      0.5
+panel          1       1      1.0
+narrative      0       1      0.0
+```
+
+---
+
+**Evaluation Results:**
+This is pasted from a ran evaluation.
+
+```
+Evaluation Results
+Overall accuracy: 100.0% (20/20)
+
+Per-class accuracy: interview ██████████ 100% (5/5) solo ██████████ 100% (5/5) panel ██████████ 100% (5/5) narrative ██████████ 100% (5/5)
+
+No misclassifications — perfect score!
 ```
 
 ---
@@ -171,10 +192,21 @@ narrative   [blank]  [blank]  [blank]
 
 1. Your overall accuracy might be decent even if one class has very low accuracy.
    Why is per-class accuracy a more informative metric than overall accuracy alone?
+   - The per-class accuracy mith suggest the training data might be skewed towards a specific class.
+     The model does not receive enough training data to distinguish other classes. It could also
+     indicate an unclear boundary for each class. A high overall accuracy might be hiding which
+     classes are failing since the test data could be from a single class.
 
 2. If `panel` episodes consistently get misclassified as `interview`, what does
    that tell you about your training labels or your prompt?
+   - The label taxonomy may be unclear as to where `interview` ends and `panel` begins. 
+     The training data may also be lacking diversity towards `panel`. The model might classify `panel` as `interview` 
+     more because it sees multiple people talking, but not distinction between everyone talking about equally 
+     and one person leading the discussion.
 
 3. You labeled 20 training episodes and evaluated on 20 test episodes (5 per class).
    How might the evaluation results change if you had labeled 100 training episodes?
    What if you had 200 test episodes?
+   - 100 training examples might give the LLM more specific clues and examples about each class. 
+     200 test episodes will just give more data to evaluate the accuracy, 
+     making the results more statistically reliable.
